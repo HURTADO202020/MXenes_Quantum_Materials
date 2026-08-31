@@ -13,6 +13,7 @@ from funciones import *
 def main():
 
     np.random.seed(seed)
+    sembrar_numba(seed)
 
     # --- Paso 0: estimación de campo medio ---
     sc_chico     = construir_supercelda(L_list[0], cell, ti_positions)
@@ -57,6 +58,20 @@ def main():
     T_c_kelvin = extrapolar_a_infinito(cruces, pares_L)
     print()
     print(f"T_c (sistema infinito) = {T_c_kelvin:.1f} K")
+
+
+
+    from ase.neighborlist import neighbor_list
+    sc = construir_supercelda(6, cell, ti_positions)
+    i_idx, j_idx, dist = neighbor_list('ijd', sc, cutoff=7.0)
+
+    import matplotlib.pyplot as plt
+    plt.hist(dist, bins=100)
+    plt.xlabel('Distancia (Å)')
+    plt.ylabel('Conteo')
+    plt.title('Histograma de distancias')
+    plt.savefig('histograma_distancias.png', dpi=150, bbox_inches='tight')
+    plt.show()
 
 
 if __name__ == "__main__":

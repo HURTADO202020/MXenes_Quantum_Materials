@@ -8,19 +8,11 @@ from ase import atoms
 from ase.neighborlist import neighbor_list
 from scipy.interpolate import CubicSpline
 from scipy.optimize import brentq
-from numba import njit
-
-
-#=========== REPRODUCIBILIDAD=============================================================
-@njit
-def sembrar_numba(seed):
-
-    np.random.seed(seed)
-
+import numba
 
 
 #============ ESTIMACIÓN DEL RANGO  DE TEMPERATURA=========================================
-def estimar_Tc_campo_medio(z_coordinaciones, J_meV, k_B):
+def estimar_Tc_campo_medio_numba(z_coordinaciones, J_meV, k_B):
     """
     Estima T_c (en Kelvin) por campo medio:
         T_c^MF = ( sum_k  z_k * |J_k| ) / k_B
@@ -35,7 +27,7 @@ def estimar_Tc_campo_medio(z_coordinaciones, J_meV, k_B):
 
 
 #============ RED Y LIBRETA DE VECINOS ====================================================def construir_supercelda(L, cell, ti_positions):
-def construir_supercelda(L, cell, ti_positions):
+def construir_supercelda_numba(L, cell, ti_positions):
     """
     Replica la celda unidad L x L veces en el plano, con condiciones de
     contorno periódicas (PBC) en a y b, y no-periódica en c. Devuelve un
@@ -59,7 +51,7 @@ def construir_supercelda(L, cell, ti_positions):
 
 
 
-def construir_libreta_vecinos(supercell, d_anillos, J_meV, tol):
+def construir_libreta_vecinos_numba(supercell, d_anillos, J_meV, tol):
     """
     Recorre todos los pares de espines, calcula la distancia con MÍNIMA
     IMAGEN (respetando PBC; válido para celdas oblicuas porque trabaja en
@@ -102,7 +94,7 @@ def construir_libreta_vecinos(supercell, d_anillos, J_meV, tol):
 
 
 
-def verificar_coordinacion(neighbor_idx, neighbor_J, J_meV):
+def verificar_coordinacion_numba(neighbor_idx, neighbor_J, J_meV):
     """
     Cuenta cuántos vecinos tiene cada sitio a cada distancia (z_1, z_2, z_3
     promedio). DEBEN coincidir con los que asumió el DFT al ajustar los J.
@@ -127,7 +119,7 @@ def verificar_coordinacion(neighbor_idx, neighbor_J, J_meV):
 
 
 
-def construir_patron_epsilon(L, epsilon_base):
+def construir_patron_epsilon_numba(L, epsilon_base):
     """
     Replica los 6 signos del estado fundamental (epsilon_base) sobre toda la
     supercelda, generando un array de tamaño N = 6*L*L donde cada espín sabe
@@ -141,16 +133,14 @@ def construir_patron_epsilon(L, epsilon_base):
 
 
 #================ALGORITMO DE METRÓPOLIS===================================================
-@njit
-def calcular_campo_local(spins, neighbor_idx_i, neighbor_J_i):
+def calcular_campo_local_numba(spins, neighbor_idx_i, neighbor_J_i):
     """
     Campo local sobre el sitio i:  h_i = sum_j  J_ij * S_j  (en meV).
     Es la "presión neta" que ejercen los vecinos sobre el sitio i.
     """
     return np.sum(neighbor_J_i * spins[neighbor_idx_i])
 
-@njit
-def metropolis_step(spins, neighbor_idx, neighbor_J, T, k_B):
+def metropolis_step_numba(spins, neighbor_idx, neighbor_J, T, k_B):
     """
     UN intento de voltear un espín al azar (campo externo h = 0).
     delta_E está en meV; T en K; k_B en meV/K -> el exponente del factor
@@ -167,8 +157,7 @@ def metropolis_step(spins, neighbor_idx, neighbor_J, T, k_B):
         spins[i] = -spins[i]                     # sube energía -> aceptar con prob de Boltzmann
     # si no se cumple ninguna condición, NO se voltea (se rechaza el intento)
 
-@njit
-def metropolis_sweep(spins, neighbor_idx, neighbor_J, T, k_B):
+def metropolis_sweep_numba(spins, neighbor_idx, neighbor_J, T, k_B):
     """
     UN barrido = N intentos de volteo. En promedio, cada espín de la red
     recibe una oportunidad de voltearse durante un barrido.
@@ -184,7 +173,7 @@ def metropolis_sweep(spins, neighbor_idx, neighbor_J, T, k_B):
 
 # ============================ OBSERVABLES ================================================
 
-def calcular_M_ord(spins, epsilon_array):
+def calcular_M_ord_number(spins, epsilon_array):
     """
     Parámetro de orden por sitio:  M_ord = (1/N) sum_i  epsilon_i * S_i.
     Cuenta (coincidencias con el patrón) menos (discrepancias), todo sobre N.
@@ -192,8 +181,7 @@ def calcular_M_ord(spins, epsilon_array):
     """
     return np.mean(epsilon_array * spins)
 
-@njit
-def calcular_energia(spins, neighbor_idx, neighbor_J):
+def calcular_energia_numba(spins, neighbor_idx, neighbor_J):
     """
     Energía total del sistema (en meV).
     El factor 0.5 corrige el DOBLE CONTEO: cada par (i,j) aparece tanto en
@@ -212,7 +200,7 @@ def calcular_energia(spins, neighbor_idx, neighbor_J):
 
 
 #============================ BARRIDO DE TEMPERATURA PARA UN TAMANO L======================
-def correr_simulacion(L, cell, ti_positions, d_anillos, J_meV, tol,
+def correr_simulacion_numba(L, cell, ti_positions, d_anillos, J_meV, tol,
                       epsilon_base, T_min, T_max, N_temps,
                       N_term, N_skip, N_meas, k_B):
     """Corre el barrido completo de temperaturas para un tamaño L."""
@@ -276,11 +264,11 @@ def correr_simulacion(L, cell, ti_positions, d_anillos, J_meV, tol,
 
 #===========================CUMULANTE, CANTIDADES FÍSICAS Y T_C============================
 
-def calcular_cumulante(M2, M4):
+def calcular_cumulante_numba(M2, M4):
     """Cumulante de Binder:  U_L = 1 - <M^4> / (3 <M^2>^2). Adimensional."""
     return 1.0 - M4 / (3.0 * M2**2)
 
-def calcular_susceptibilidad(M2, M_abs, T, N, k_B):
+def calcular_susceptibilidad_numba(M2, M_abs, T, N, k_B):
     """
     Susceptibilidad por sitio (unidades clásicas, con k_B explícito):
         chi = (N / (k_B T)) * (<M^2> - <|M|>^2)
@@ -289,14 +277,14 @@ def calcular_susceptibilidad(M2, M_abs, T, N, k_B):
     """
     return (N / (k_B * T)) * (M2 - M_abs**2)
 
-def calcular_calor_especifico(E, E2, T, N, k_B):
+def calcular_calor_especifico_numba(E, E2, T, N, k_B):
     """
     Calor específico por sitio (unidades clásicas, con k_B explícito):
         C = (<E^2> - <E>^2) / (N * k_B * T^2)
     """
     return (E2 - E**2) / (N * k_B * T**2)
 
-def encontrar_cruce(curva_L1, curva_L2):
+def encontrar_cruce_numba(curva_L1, curva_L2):
     """
     Dadas las curvas U_L(T) de dos tamaños (diccionarios T -> U), interpola
     ambas con splines y resuelve U_L1(T) = U_L2(T). Devuelve la temperatura
@@ -324,7 +312,7 @@ def encontrar_cruce(curva_L1, curva_L2):
 
     return T_cruce
 
-def extrapolar_a_infinito(temperaturas_de_cruce, tamanos):
+def extrapolar_a_infinito_numba(temperaturas_de_cruce, tamanos):
     """
     Ajusta  T_cruce(L) = T_c(infinito) + a/L  (una recta en 1/L) y devuelve
     la ordenada al origen: T_c del sistema infinito, EN KELVIN.

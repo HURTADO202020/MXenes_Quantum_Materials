@@ -3,10 +3,10 @@ import numpy as np
 
 # tamanos de celada a simular
 L_list = [6, 12]
-
+Paralell = True #paralelizar
 # Rangos de temepratura del barrido
-T_min   = 100.0     # K
-T_max   = 450    # K
+T_min   = 180.0     # K
+T_max   = 320    # K
 N_temps = 10       # cuántas temperaturas simular entre T_min y T_max
 
 # termalización
@@ -51,7 +51,7 @@ J_meV = np.array([12.0, -3.5, 1.2])
 
 # distancias a las que viven los acoplamientos verificar con el histograma de distancias de
 #su red
-d_anillos = np.array([3.12, 5.10, 6.28])
+d_anillos = np.array([3.14, 5.4382, 6.2795]) #antes era 5.10 el segundo parámetro
 
 #tolerancia
 tol = 0.05
