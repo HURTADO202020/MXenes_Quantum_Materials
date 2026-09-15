@@ -8,7 +8,16 @@ from ase import atoms
 from ase.neighborlist import neighbor_list
 from scipy.interpolate import CubicSpline
 from scipy.optimize import brentq
-import numba
+from numba import njit
+
+
+#========== REPRODUCIBILIDAD DE NUMBA
+@njit
+def sembrar_numba(seed):
+
+    np.random.seed(seed)
+
+
 
 
 #============ ESTIMACIÓN DEL RANGO  DE TEMPERATURA=========================================
@@ -133,6 +142,7 @@ def construir_patron_epsilon_numba(L, epsilon_base):
 
 
 #================ALGORITMO DE METRÓPOLIS===================================================
+@njit
 def calcular_campo_local_numba(spins, neighbor_idx_i, neighbor_J_i):
     """
     Campo local sobre el sitio i:  h_i = sum_j  J_ij * S_j  (en meV).
@@ -140,6 +150,7 @@ def calcular_campo_local_numba(spins, neighbor_idx_i, neighbor_J_i):
     """
     return np.sum(neighbor_J_i * spins[neighbor_idx_i])
 
+@njit
 def metropolis_step_numba(spins, neighbor_idx, neighbor_J, T, k_B):
     """
     UN intento de voltear un espín al azar (campo externo h = 0).
@@ -157,6 +168,7 @@ def metropolis_step_numba(spins, neighbor_idx, neighbor_J, T, k_B):
         spins[i] = -spins[i]                     # sube energía -> aceptar con prob de Boltzmann
     # si no se cumple ninguna condición, NO se voltea (se rechaza el intento)
 
+@njit
 def metropolis_sweep_numba(spins, neighbor_idx, neighbor_J, T, k_B):
     """
     UN barrido = N intentos de volteo. En promedio, cada espín de la red
@@ -181,6 +193,7 @@ def calcular_M_ord_number(spins, epsilon_array):
     """
     return np.mean(epsilon_array * spins)
 
+@njit
 def calcular_energia_numba(spins, neighbor_idx, neighbor_J):
     """
     Energía total del sistema (en meV).
@@ -206,16 +219,16 @@ def correr_simulacion_numba(L, cell, ti_positions, d_anillos, J_meV, tol,
     """Corre el barrido completo de temperaturas para un tamaño L."""
 
     # 1) Construir red, libreta de vecinos y patrón epsilon.
-    supercell      = construir_supercelda(L, cell, ti_positions)
-    nbr_idx, nbr_J = construir_libreta_vecinos(supercell, d_anillos, J_meV, tol)
-    epsilon        = construir_patron_epsilon(L, epsilon_base)
+    supercell      = construir_supercelda_numba(L, cell, ti_positions)
+    nbr_idx, nbr_J = construir_libreta_vecinos_numba(supercell, d_anillos, J_meV, tol)
+    epsilon        = construir_patron_epsilon_numba(L, epsilon_base)
 
     # 2) Verificación de seguridad: z_k debe coincidir con el DFT.
-    z_coord = verificar_coordinacion(nbr_idx, nbr_J, J_meV)
+    z_coord = verificar_coordinacion_numba(nbr_idx, nbr_J, J_meV)
 
     # 3) Inicializar espines al azar (+1 o -1 con probabilidad 50/50).
     N = 6 * L * L
-    spins = np.random.choice([-1, +1], size=N)
+    spins = np.random.choice([-1.0, +1.0], size=N)
 
     # 4) Temperaturas de MAYOR a MENOR (annealing).
     temperaturas = np.linspace(T_max, T_min, N_temps)
@@ -226,7 +239,7 @@ def correr_simulacion_numba(L, cell, ti_positions, d_anillos, J_meV, tol,
 
         # 5a) Termalización: estos barridos NO se miden, se descartan.
         for _ in range(N_term):
-            metropolis_sweep(spins, nbr_idx, nbr_J, T, k_B)
+            metropolis_sweep_numba(spins, nbr_idx, nbr_J, T, k_B)
 
         # 5b) Producción: medimos cada N_skip barridos.
         M_abs_acum = 0.0
@@ -236,9 +249,9 @@ def correr_simulacion_numba(L, cell, ti_positions, d_anillos, J_meV, tol,
         E2_acum    = 0.0
         for _ in range(N_meas):
             for _ in range(N_skip):
-                metropolis_sweep(spins, nbr_idx, nbr_J, T, k_B)
-            M = calcular_M_ord(spins, epsilon)
-            E = calcular_energia(spins, nbr_idx, nbr_J)
+                metropolis_sweep_numba(spins, nbr_idx, nbr_J, T, k_B)
+            M = calcular_M_ord_numba(spins, epsilon)
+            E = calcular_energia_numba(spins, nbr_idx, nbr_J)
             M_abs_acum += abs(M)
             M2_acum    += M * M
             M4_acum    += M**4

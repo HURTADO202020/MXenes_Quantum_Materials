@@ -8,6 +8,7 @@
 import numpy as np
 from parametros import *
 from funciones import *
+from funciones_numba import *
 
 
 def main():
@@ -28,11 +29,12 @@ def main():
     # --- Paso 1: correr simulación para cada L ---
     todos = {}
     for L in L_list:
-        print(f"Corriendo L={L} ({6*L*L} espines)...")
+
+        print(f"Corriendo L={L} ({6*L*L} spines)...")
         resultados, z_coord = correr_simulacion(
-            L, cell, ti_positions, d_anillos, J_meV, tol,
-            epsilon_base, T_min, T_max, N_temps,
-            N_term, N_skip, N_meas, k_B)
+                L, cell, ti_positions, d_anillos, J_meV, tol,
+                epsilon_base, T_min, T_max, N_temps,
+                 N_term, N_skip, N_meas, k_B)
         todos[L] = resultados
         print(f"  L={L} listo. Coordinaciones: {z_coord}")
 

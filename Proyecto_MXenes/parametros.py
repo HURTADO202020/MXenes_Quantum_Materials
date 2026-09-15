@@ -13,10 +13,10 @@ N_temps = 30       # cuántas temperaturas simular entre T_min y T_max
 N_term = 20_000
 
 # barridos saltados entre medidas consecutivas
-N_skip = 10
+N_skip = 50
 
 # medidas efectivas en cada temperatura
-N_meas = 10_000
+N_meas = 50_000
 
 #reproducibilidad
 seed = 42
@@ -25,7 +25,7 @@ seed = 42
 output_dir = "./Resultados"
 
 
-
+parallel = False
 #===================DATOS DEL MATERIAL ============================================
 
 # constante de Boltzman
