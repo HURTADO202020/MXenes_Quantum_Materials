@@ -8,7 +8,6 @@
 import numpy as np
 from parametros import *
 from funciones import *
-from funciones_numba import *
 
 
 def main():
