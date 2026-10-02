@@ -309,9 +309,9 @@ def encontrar_cruce(curva_L1, curva_L2):
     # ... interpolación spline + búsqueda de raíz de la diferencia ...
     temps = sorted(curva_L1.keys())
 
-    U_L1 = [curva_L1[T] for T in temps]
-    U_L2 = [curva_L2[T] for T in temps]
-    ok = np.isfinite(U1) & np.isfinite(U2)
+    U_L1 =np.array([curva_L1[T] for T in temps])
+    U_L2 =np.array([curva_L2[T] for T in temps])
+    ok = np.isfinite(U_L1) & np.isfinite(U_L2)
 
     print(f"  U_L1: {U_L1}")
     print(f"  U_L2: {U_L2}")
