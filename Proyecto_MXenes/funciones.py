@@ -278,6 +278,8 @@ def correr_simulacion(L, cell, ti_positions, d_anillos, J_meV, tol,
 
 def calcular_cumulante(M2, M4):
     """Cumulante de Binder:  U_L = 1 - <M^4> / (3 <M^2>^2). Adimensional."""
+    if M2 <= 0:
+        return np.nan
     return 1.0 - M4 / (3.0 * M2**2)
 
 def calcular_susceptibilidad(M2, M_abs, T, N, k_B):
@@ -309,18 +311,23 @@ def encontrar_cruce(curva_L1, curva_L2):
 
     U_L1 = [curva_L1[T] for T in temps]
     U_L2 = [curva_L2[T] for T in temps]
+    ok = np.isfinite(U1) & np.isfinite(U2)
 
     print(f"  U_L1: {U_L1}")
     print(f"  U_L2: {U_L2}")
 
+    temps, U1, U2 = np.array(temps)[ok], U1[ok], U2[ok]
 
-    spline_L1 = CubicSpline(temps, U_L1)
-    spline_L2 = CubicSpline(temps, U_L2)
+    if len(temps) < 3:
+        return np.nan
 
-    diferencia = lambda T: spline_L1(T) - spline_L2(T)
+    s1, s2 = CubicSpline(temps, U1), CubicSpline(temps, U2)
+    f = lambda T:s1(T) -s2(T)
+    if f(temps[0]) * f(temps[-1]) > 0:
+        return np.nan
 
-    # buscar la raíz en el intervalo [T_min, T_max]
-    T_cruce = brentq(diferencia, temps[0], temps[-1])
+    T_cruce = brentq[f, temps[0], temps[-1]]
+
 
     return T_cruce
 

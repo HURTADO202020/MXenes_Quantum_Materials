@@ -6,11 +6,13 @@
 """
 
 import numpy as np
+import os
 from parametros import *
 from funciones import *
 
 
 def main():
+    os.makedirs(output_dir, exist_ok = True)
 
     np.random.seed(seed)
     sembrar_numba(seed)
@@ -35,6 +37,8 @@ def main():
                 epsilon_base, T_min, T_max, N_temps,
                  N_term, N_skip, N_meas, k_B)
         todos[L] = resultados
+        np.savez(f"{output_dir}/L{L}.npz", T=np.array(list(resultados.keys())), N=6*L*L,
+         **{k: np.array([v[k] for v in resultados.values()]) for k in ("M_abs", "M2", "M4", "E", "E2")})
         print(f"  L={L} listo. Coordinaciones: {z_coord}")
 
     # --- Paso 2: calcular cumulante de Binder U_L(T) ---
@@ -51,28 +55,23 @@ def main():
     for L1, L2 in zip(L_list[:-1], L_list[1:]):
         print(f"Buscando cruce entre L={L1} y L={L2}...")
         T_cruce = encontrar_cruce(cumulantes[L1], cumulantes[L2])
+        if np.isnan(T_cruce):
+            print(f" Sin cruce entre L={L1} y L={L2} en [{T_min}, {T_max}] K")
+            continue
+
         cruces.append(T_cruce)
         pares_L.append(L1)
         print(f"  Cruce encontrado en T = {T_cruce:.1f} K")
+
+        if len(cruces) < 2:
+            print("No hay suficientes cruces para extrapolar T_c")
+            return
+
 
     # --- Paso 4: extrapolar al sistema infinito ---
     T_c_kelvin = extrapolar_a_infinito(cruces, pares_L)
     print()
     print(f"T_c (sistema infinito) = {T_c_kelvin:.1f} K")
-
-
-
-    from ase.neighborlist import neighbor_list
-    sc = construir_supercelda(6, cell, ti_positions)
-    i_idx, j_idx, dist = neighbor_list('ijd', sc, cutoff=7.0)
-
-    import matplotlib.pyplot as plt
-    plt.hist(dist, bins=100)
-    plt.xlabel('Distancia (Å)')
-    plt.ylabel('Conteo')
-    plt.title('Histograma de distancias')
-    plt.savefig('histograma_distancias.png', dpi=150, bbox_inches='tight')
-    plt.show()
 
 
 if __name__ == "__main__":

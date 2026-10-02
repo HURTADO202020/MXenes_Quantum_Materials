@@ -22,7 +22,7 @@ N_meas = 50_000
 seed = 42
 
 #carpeta de resultados 
-output_dir = "./Resultados"
+output_dir = "./resultados"
 
 
 parallel = False
