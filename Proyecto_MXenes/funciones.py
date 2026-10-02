@@ -316,17 +316,17 @@ def encontrar_cruce(curva_L1, curva_L2):
     print(f"  U_L1: {U_L1}")
     print(f"  U_L2: {U_L2}")
 
-    temps, U1, U2 = np.array(temps)[ok], U1[ok], U2[ok]
+    temps, U_L1, U_L2 = np.array(temps)[ok], U_L1[ok], U_L2[ok]
 
     if len(temps) < 3:
         return np.nan
 
-    s1, s2 = CubicSpline(temps, U1), CubicSpline(temps, U2)
+    s1, s2 = CubicSpline(temps, U_L1), CubicSpline(temps, U_L2)
     f = lambda T:s1(T) -s2(T)
     if f(temps[0]) * f(temps[-1]) > 0:
         return np.nan
 
-    T_cruce = brentq[f, temps[0], temps[-1]]
+    T_cruce = brentq(f, temps[0], temps[-1])
 
 
     return T_cruce

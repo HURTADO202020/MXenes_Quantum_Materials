@@ -63,9 +63,9 @@ def main():
         pares_L.append(L1)
         print(f"  Cruce encontrado en T = {T_cruce:.1f} K")
 
-        if len(cruces) < 2:
-            print("No hay suficientes cruces para extrapolar T_c")
-            return
+    if len(cruces) < 2:
+        print("No hay suficientes cruces para extrapolar T_c")
+        return
 
 
     # --- Paso 4: extrapolar al sistema infinito ---
